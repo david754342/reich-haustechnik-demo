@@ -7,18 +7,24 @@
 
   /* ------------------------------------------------------------------ *
    * Versand
-   *   provider: 'formsubmit' – E-Mail über formsubmit.co (inkl. Dateianhänge)
-   *             'web3forms'  – E-Mail über web3forms.com (Access Key nötig, ohne Anhänge)
+   *   provider: 'web3forms'  – E-Mail über web3forms.com (Access Key nötig)
+   *             'formsubmit' – E-Mail über formsubmit.co (formsubmitTo = Empfänger)
    *             'demo'       – nichts senden, nur Danke-Meldung zeigen
+   *
+   *   >>> Hier den Web3Forms Access Key eintragen (von web3forms.com per Mail): <<<
    * ------------------------------------------------------------------ */
   var SEND = {
-    provider: 'formsubmit',
-    formsubmitTo: 'david.mayer2005@gmail.com',
-    web3formsKey: ''
+    provider: 'web3forms',
+    web3formsKey: 'HIER-ACCESS-KEY-EINTRAGEN',
+    formsubmitTo: ''
   };
+  // Fotos als Dateianhang mitsenden? Nur mit Web3Forms-Pro möglich – sonst Foto-Checkliste.
+  var ATTACHMENTS = false;
 
   var PHONE = '07633 93 43 40';
   var PHONE_TEL = '+497633934340';
+  var WHATSAPP = 'https://wa.link/oufanb';
+  var PHOTO_MAIL = 'info@reich-sanitaer.de';
   var MAX_FILES_PER_FIELD = 5;
   var MAX_TOTAL_MB = 20;
   var IMG_MAX_EDGE = 1600;
@@ -88,7 +94,9 @@
       { type: 'email', name: 'E-Mail', label: 'E-Mail', required: true, auto: 'email', half: true },
       { type: 'text', name: 'Aufmerksam geworden durch', label: 'Wie sind Sie auf Reich Haustechnik aufmerksam geworden?', required: true },
       { type: 'radio', id: 'angebot', name: 'Angebot vorhanden', label: 'Haben Sie bereits ein Angebot vorliegen?', required: true, stack: true, options: OFFER_YES.concat(['Nein']) },
-      { type: 'file', name: 'Vergleichsangebot', label: 'Bitte laden Sie das Vergleichsangebot hoch', accept: 'image/*,application/pdf', when: { id: 'angebot', in: OFFER_YES } },
+      ATTACHMENTS
+        ? { type: 'file', name: 'Vergleichsangebot', label: 'Bitte laden Sie das Vergleichsangebot hoch', accept: 'image/*,application/pdf', when: { id: 'angebot', in: OFFER_YES } }
+        : { type: 'html', cls: 'rb-ba__hint', html: '<p>Gerne prüfen wir Ihr Vergleichsangebot. Wie Sie es uns schicken können, zeigen wir Ihnen in Schritt 4 „Fotos & Unterlagen“.</p>', when: { id: 'angebot', in: OFFER_YES } },
       { type: 'radio', id: 'gebaeude', name: 'Gebäudetyp', label: 'Um welchen Gebäudetyp handelt es sich?', required: true, options: types },
       { type: 'radio', name: 'Reihenhaus', label: 'Unser Reihenhaus ist ein', required: true, options: ['Reihenmittelhaus', 'Reihenendhaus'], when: { id: 'gebaeude', in: ['Reihenhaus'] } },
       { type: 'radio', name: 'Stockwerk der Wohnung', label: 'In welchem Stockwerk liegt die Wohnung?', required: true, compact: true, options: ['UG', 'EG', '1. OG', '2. OG', '3. OG', 'höher'], when: { id: 'gebaeude', in: ['Wohnung'] } },
@@ -101,23 +109,43 @@
   function importance(rows) {
     return { type: 'matrix', name: 'Wie wichtig', label: 'Wie wichtig sind Ihnen …', required: true, rows: rows, cols: ['Weniger wichtig', 'wichtig', 'sehr wichtig'] };
   }
+  var PV_PHOTOS = [{ label: 'Batteriespeicher', when: { id: 'akku', in: ['Ja'] } }, { label: 'Wechselrichter', when: { id: 'pv', in: ['Schon vorhanden'] } }];
   var BUILT = { type: 'radio', name: 'Baujahr Gebäude (Zeitraum)', label: 'Wann wurde das Gebäude erbaut?', options: ['vor 1990', 'zwischen 1991 und 2000', 'zwischen 2001 und 2009', 'nach 2009'] };
   var BUILT_EXACT = { type: 'number', name: 'Baujahr Gebäude', label: 'Genaues Baujahr Gebäude', required: true, min: 1500, max: YEAR + 1, placeholder: 'z. B. 1985', half: true };
   var INSULATION = { type: 'checkbox', name: 'Wärmeschutz', label: 'Wurden nachträglich Maßnahmen für den Wärmeschutz getroffen?', required: true, options: ['Neue Fenster', 'Außenfassade gedämmt', 'Dach nachträglich isoliert', 'Bisher noch keine'] };
   var PLANNED = { type: 'text', name: 'Weitere Sanierungen geplant', label: 'Sind derzeit weitere Sanierungsarbeiten an Ihrem Gebäude geplant? Wenn ja, welche?', required: true, placeholder: 'z. B. „Nein“ oder „Fenstertausch 2027“' };
   var SPECIAL = function (help) { return { type: 'text', name: 'Besonderheiten', label: 'Gibt es etwas, worauf wir besonders achten müssen?', help: help }; };
   var WHEN_START = { type: 'radio', name: 'Wunschtermin', label: 'Wann möchten Sie das Projekt umsetzen?', stack: true, options: ['So schnell wie möglich', 'In den nächsten 3–6 Monaten', 'In 6–12 Monaten', 'Noch offen'] };
+  var UPLOAD_TITLE = ATTACHMENTS ? 'Daten-Upload' : 'Fotos & Unterlagen';
   function uploadIntro(extra) {
+    if (ATTACHMENTS) {
+      return [
+        { type: 'html', cls: 'rb-ba__lead', html: '<h4>Foto-Upload</h4><p>Anhand der Bilder können wir die Ist-Situation optimal einschätzen und so den Projektumfang sehr genau bestimmen.' + (extra ? ' ' + extra : '') + '</p>' },
+        { type: 'section', title: 'Hinweis', text: 'Bitte laden Sie pro Uploadfeld bis zu ' + MAX_FILES_PER_FIELD + ' Bilder hoch. Fotos werden vor dem Senden automatisch verkleinert. Alle Uploads zusammen dürfen ' + MAX_TOTAL_MB + ' MB nicht überschreiten. Am Handy können Sie direkt die Kamera verwenden.' }
+      ];
+    }
     return [
-      { type: 'html', cls: 'rb-ba__lead', html: '<h4>Foto-Upload</h4><p>Anhand der Bilder können wir die Ist-Situation optimal einschätzen und so den Projektumfang sehr genau bestimmen.' + (extra ? ' ' + extra : '') + '</p>' },
-      { type: 'section', title: 'Hinweis', text: 'Bitte laden Sie pro Uploadfeld bis zu ' + MAX_FILES_PER_FIELD + ' Bilder hoch. Fotos werden vor dem Senden automatisch verkleinert. Alle Uploads zusammen dürfen ' + MAX_TOTAL_MB + ' MB nicht überschreiten. Am Handy können Sie direkt die Kamera verwenden.' }
+      { type: 'html', cls: 'rb-ba__lead', html: '<h4>Fotos</h4><p>Anhand der Bilder können wir die Ist-Situation optimal einschätzen und so den Projektumfang sehr genau bestimmen.' + (extra ? ' ' + extra : '') + '</p>' },
+      { type: 'section', title: 'So geht’s', text: 'Machen Sie die Fotos aus der Liste am besten direkt mit dem Handy und schicken Sie sie uns per WhatsApp oder E-Mail. Nennen Sie dabei bitte Ihren Namen, damit wir die Bilder Ihrer Bestandsaufnahme zuordnen können.' }
     ];
   }
   function files(list) {
-    return list.map(function (x) {
-      var o = typeof x === 'string' ? { label: x } : x;
-      return { type: 'file', name: 'Foto: ' + o.label, label: o.label, accept: o.accept || 'image/*', help: o.help, when: o.when };
-    });
+    var items = list.map(function (x) { return typeof x === 'string' ? { label: x } : x; });
+    if (ATTACHMENTS) {
+      return items.map(function (o) {
+        return { type: 'file', name: 'Foto: ' + o.label, label: o.label, accept: o.accept || 'image/*', help: o.help, when: o.when };
+      });
+    }
+    items.unshift({ label: 'Ihr Vergleichsangebot', help: 'als Foto oder PDF', when: { id: 'angebot', in: OFFER_YES } });
+    return [
+      { type: 'photolist', label: 'Diese Fotos helfen uns besonders:', items: items },
+      { type: 'html', cls: 'rb-ba__send-photos', html:
+        '<a class="rb-ba__btn rb-ba__btn--wa" href="' + WHATSAPP + '" target="_blank" rel="noopener">' +
+        '<svg viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>Fotos per WhatsApp senden</a>' +
+        '<a class="rb-ba__btn rb-ba__btn--ghost" href="mailto:' + PHOTO_MAIL + '" data-photo-mail>' +
+        '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="currentColor" d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/></svg>Fotos per E-Mail senden</a>' },
+      { type: 'radio', name: 'Fotos kommen per', label: 'Wie möchten Sie uns die Fotos zukommen lassen?', required: true, options: ['Per WhatsApp', 'Per E-Mail', 'Beim Vor-Ort-Termin'] }
+    ];
   }
   function finalPage() {
     return { title: 'Ihr Projekt – Unsere Mission', fields: [
@@ -169,16 +197,17 @@
           { type: 'number', name: 'PV-Installationsjahr', label: 'Installationsjahr der bestehenden PV-Anlage', required: true, min: 1990, max: YEAR + 1, half: true, when: { id: 'pv', in: ['Schon vorhanden'] } },
           { type: 'radio', id: 'akku', name: 'Batteriespeicher vorhanden', label: 'Ist ein Batteriespeicher bereits vorhanden?', required: true, options: ['Ja', 'Noch nicht'], when: { id: 'pv', in: ['Schon vorhanden'] } },
           { type: 'number', name: 'Batteriespeicher (kWh)', label: 'Wie groß ist Ihr Batteriespeicher?', unit: 'kWh', required: true, half: true, step: 'any', when: { id: 'akku', in: ['Ja'] } }
-        ].concat(files([{ label: 'Foto Batteriespeicher', when: { id: 'akku', in: ['Ja'] } }, { label: 'Foto Wechselrichter', when: { id: 'pv', in: ['Schon vorhanden'] } }])) },
-        { title: 'Daten-Upload', fields: uploadIntro('Dies ist vor allem wichtig, um die maximale staatliche Förderung für Sie zu erarbeiten.').concat(files([
+        ].concat(ATTACHMENTS ? files(PV_PHOTOS) : []) },
+        { title: UPLOAD_TITLE, fields: [
+          { type: 'radio', name: 'Beschaffenheit Öltank', label: 'Wie ist die Beschaffenheit Ihres Öltanks?', options: ['Kellergeschweißter Öltank', 'Batterietank-Anlage'], when: { id: 'heizart', has: 'Öl' } },
+          { type: 'number', name: 'Öltank (Liter)', label: 'Wie viel Liter fasst die Öltankanlage?', unit: 'Liter', half: true, when: { id: 'heizart', has: 'Öl' } }
+        ].concat(uploadIntro('Dies ist vor allem wichtig, um die maximale staatliche Förderung für Sie zu erarbeiten.')).concat(files([
           { label: 'Der Grundriss Ihres Hauses', accept: 'image/*,application/pdf' },
           'Haus von außen', 'Fotos der jetzigen Heizungsanlage', 'Typenschild der Heizung', 'Heizungspumpen', 'Nahaufnahme der Anlagenteile',
           'Bilder der aktuellen Heizkörper', 'Warmwasserbereitung', 'Wasserzähler', 'Hauswasseranschluss und Wasserverteilung',
-          { label: 'Öltank / Öltankraum', when: { id: 'heizart', has: 'Öl' } }
-        ])).concat([
-          { type: 'radio', name: 'Beschaffenheit Öltank', label: 'Wie ist die Beschaffenheit Ihres Öltanks?', options: ['Kellergeschweißter Öltank', 'Batterietank-Anlage'], when: { id: 'heizart', has: 'Öl' } },
-          { type: 'number', name: 'Öltank (Liter)', label: 'Wie viel Liter fasst die Öltankanlage?', unit: 'Liter', half: true, when: { id: 'heizart', has: 'Öl' } }
-        ]).concat(files(['Stromzählerkasten', 'Weg in den Heizraum'])) },
+          { label: 'Öltank / Öltankraum', when: { id: 'heizart', has: 'Öl' } },
+          'Stromzählerkasten', 'Weg in den Heizraum'
+        ].concat(ATTACHMENTS ? [] : PV_PHOTOS))) },
         finalPage()
       ]
     },
@@ -218,7 +247,7 @@
           WHEN_START,
           { type: 'radio', name: 'Ausstellungsbesuch', label: 'Möchten Sie sich in einer Ausstellung unserer Partner inspirieren lassen?', options: ['Ja, gerne', 'Nein, danke'] }
         ] },
-        { title: 'Daten-Upload', fields: uploadIntro('So können wir Ihr neues Bad schon vor dem Termin vor Ort genau planen.').concat(files([
+        { title: UPLOAD_TITLE, fields: uploadIntro('So können wir Ihr neues Bad schon vor dem Termin vor Ort genau planen.').concat(files([
           { label: 'Grundriss oder Skizze des Bades', accept: 'image/*,application/pdf' },
           'Gesamtansicht des Bades', 'Fotos aller Wände', 'Boden', 'Fenster und Tür',
           'Vorhandene Wanne / Dusche', 'WC und Waschtisch', 'Heizkörper', 'Anschlüsse und Revisionsöffnungen',
@@ -263,7 +292,7 @@
           { type: 'number', name: 'PV-Anlage (kWp)', label: 'Wie groß ist Ihre Photovoltaikanlage?', unit: 'kWp', step: 'any', half: true, when: { id: 'pv', in: ['Ja'] } },
           WHEN_START
         ] },
-        { title: 'Daten-Upload', fields: uploadIntro('So können wir Leitungswege und Gerätestandorte schon vorab planen.').concat(files([
+        { title: UPLOAD_TITLE, fields: uploadIntro('So können wir Leitungswege und Gerätestandorte schon vorab planen.').concat(files([
           { label: 'Grundriss der Räume', accept: 'image/*,application/pdf' },
           'Haus von außen', 'Räume innen (je Raum)', 'Gewünschte Position des Innengeräts', 'Gewünschte Position des Außengeräts',
           'Fassade / möglicher Leitungsweg', 'Zählerschrank / Sicherungskasten',
@@ -305,7 +334,7 @@
           { type: 'radio', name: 'Interesse Regenwassernutzung', label: 'Ist Regenwassernutzung ein Thema für Sie?', options: ['Ja', 'Nein', 'Schon vorhanden'] },
           WHEN_START
         ] },
-        { title: 'Daten-Upload', fields: uploadIntro('So können wir Leitungen, Anschlüsse und den Aufwand schon vorab einschätzen.').concat(files([
+        { title: UPLOAD_TITLE, fields: uploadIntro('So können wir Leitungen, Anschlüsse und den Aufwand schon vorab einschätzen.').concat(files([
           { label: 'Grundriss / Leitungsplan', accept: 'image/*,application/pdf' },
           'Hausanschluss und Wasserzähler', 'Sichtbare Leitungen im Keller', 'Warmwasserspeicher / -bereitung', 'Armaturen und Sanitärobjekte',
           'Problemstellen (z. B. Rost, Feuchtigkeit)', 'Abwasser / Hebeanlage', 'Typenschilder vorhandener Geräte'
@@ -399,6 +428,14 @@
           '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
           '<span class="rb-ba__drop-text"><strong>Dateien auswählen</strong> oder Foto aufnehmen</span><span class="rb-ba__drop-hint">bis zu ' + MAX_FILES_PER_FIELD + ' Dateien</span></label>' +
           '<ul class="rb-ba__files"></ul>' + help(f) + '<p class="rb-ba__error" role="alert"></p></div>';
+      case 'photolist':
+        return '<div class="rb-ba__field rb-ba__field--photos"' + attrs(f) + '><span class="rb-ba__label">' + esc(f.label) + '</span><ul class="rb-ba__photolist">' +
+          f.items.map(function (it) {
+            var hint = it.help || (it.accept && /pdf/.test(it.accept) ? 'als Foto, Scan oder PDF' : '');
+            return '<li class="rb-ba__photo"' + attrs({ type: 'photo-item', when: it.when }) + '>' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5h3.2L9 6h6l1.8 2.5H20V19H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>' +
+              '<span><span class="rb-ba__photo-name">' + esc(it.label) + '</span>' + (hint ? '<span class="rb-ba__photo-hint">' + esc(hint) + '</span>' : '') + '</span></li>';
+          }).join('') + '</ul></div>';
       case 'consent':
         return '<fieldset class="rb-ba__field rb-ba__field--consent"' + attrs(f) + '><legend class="rb-ba__label">Datenschutz' + reqMark(f) + '</legend>' +
           '<div class="rb-ba__privacy"><p>Offenheit im Umgang mit Ihren Daten ist uns wichtig. Mit dem Absenden Ihrer Angaben werden personenbezogene Daten erhoben. Die Daten werden ausschließlich zum Zweck der Bearbeitung Ihrer Anfrage erhoben, verarbeitet und genutzt. Sobald der Zweck entfällt, werden die von Ihnen angegebenen personenbezogenen Daten unverzüglich gelöscht. Ihre Einwilligung können Sie jederzeit widerrufen. Ihre Daten werden vertraulich behandelt und nicht zu Werbezwecken an Dritte weitergegeben.</p>' +
@@ -422,7 +459,7 @@
       return '<section class="rb-ba__page" data-page="' + i + '"' + (i ? ' hidden' : '') + ' aria-labelledby="rb-ba-pt-' + i + '"><h3 class="rb-ba__page-title" id="rb-ba-pt-' + i + '">' + esc(p.title) + '</h3><div class="rb-ba__fields">' +
         p.fields.map(renderField).join('') + '</div></section>';
     }).join('') +
-    '<div class="rb-ba__hp" aria-hidden="true"><label>Bitte leer lassen <input type="text" name="_honey" tabindex="-1" autocomplete="off"></label></div>' +
+    '<div class="rb-ba__hp" aria-hidden="true"><label>Bitte leer lassen <input type="text" name="' + (SEND.provider === 'formsubmit' ? '_honey' : 'botcheck') + '" tabindex="-1" autocomplete="off"></label></div>' +
     '<footer class="rb-ba__nav">' +
     '<button type="button" class="rb-ba__btn rb-ba__btn--ghost" data-act="back">Zurück</button>' +
     '<button type="button" class="rb-ba__link" data-act="save">Speichern und später fortsetzen</button>' +
@@ -574,7 +611,7 @@
   function collect() {
     var data = {};
     [].slice.call(form.querySelectorAll('input, select, textarea')).forEach(function (i) {
-      if (i.type === 'file' || i.name === '_honey') return;
+      if (i.type === 'file' || i.closest('.rb-ba__hp')) return;
       if (i.type === 'radio') { if (i.checked) data[i.name] = i.value; return; }
       if (i.type === 'checkbox') {
         var k = i.getAttribute('data-group') ? 'cb:' + i.getAttribute('data-group') : i.name;
@@ -588,7 +625,7 @@
   }
   function restore(data) {
     [].slice.call(form.querySelectorAll('input, select, textarea')).forEach(function (i) {
-      if (i.type === 'file' || i.name === '_honey') return;
+      if (i.type === 'file' || i.closest('.rb-ba__hp')) return;
       if (i.type === 'radio') { i.checked = data[i.name] === i.value; return; }
       if (i.type === 'checkbox') {
         var g = i.getAttribute('data-group');
@@ -623,6 +660,29 @@
     save(false);
   });
   btnSave.addEventListener('click', function () { save(true); });
+
+  // Foto-Buttons: E-Mail mit Betreff/Text vorbefüllen und Versandweg vormerken
+  function pickDelivery(v) {
+    var r = [].slice.call(form.querySelectorAll('input[name="Fotos kommen per"]')).filter(function (i) { return i.value === v; })[0];
+    if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+  }
+  root.addEventListener('click', function (e) {
+    var mail = e.target.closest('[data-photo-mail]');
+    var wa = e.target.closest('.rb-ba__btn--wa');
+    if (mail) {
+      var val = function (n) { var el = form.querySelector('[name="' + n + '"]'); return el ? el.value.trim() : ''; };
+      var name = (val('Vorname') + ' ' + val('Nachname')).trim();
+      var subj = 'Fotos zur ' + T.subject + (name ? ' – ' + name : '');
+      var body = 'Hallo Reich-Team,\n\nanbei meine Fotos zur ' + T.subject + '.\n\n' +
+        (name ? 'Name: ' + name + '\n' : '') +
+        (val('Straße und Hausnummer') ? 'Adresse: ' + val('Straße und Hausnummer') + ', ' + val('Gebäudestandort (PLZ und Ort)') + '\n' : '') +
+        (val('Telefon') ? 'Telefon: ' + val('Telefon') + '\n' : '') + '\nViele Grüße';
+      mail.href = 'mailto:' + PHOTO_MAIL + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+      pickDelivery('Per E-Mail');
+    } else if (wa) {
+      pickDelivery('Per WhatsApp');
+    }
+  });
 
   function showNotice(msg, kind) {
     notice.className = 'rb-ba__notice is-' + (kind || 'ok');
@@ -773,12 +833,46 @@
     function textPayload() {
       var o = {};
       new FormData(form).forEach(function (v, k) { if (typeof v === 'string') o[k] = v; });
+      if (!o.botcheck) delete o.botcheck;
       return o;
+    }
+    function postJSON(url, body, isForm) {
+      var ctrl = window.AbortController ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 30000) : null;
+      var opts = { method: 'POST', headers: { Accept: 'application/json' }, body: body };
+      if (!isForm) opts.headers['Content-Type'] = 'application/json';
+      if (ctrl) opts.signal = ctrl.signal;
+      return fetch(url, opts)
+        .then(function (r) { return r.json().catch(function () { return { success: false, message: 'HTTP ' + r.status }; }); })
+        .finally(function () { if (timer) clearTimeout(timer); });
     }
     var hasFiles = [].slice.call(form.querySelectorAll('input[type="file"]')).some(function (i) { return !i.disabled && i.files && i.files.length; });
     save(false);
 
-    if (SEND.provider === 'formsubmit') {
+    if (SEND.provider === 'web3forms') {
+      if (!SEND.web3formsKey || /HIER-ACCESS-KEY/.test(SEND.web3formsKey)) {
+        return successView('Demo-Modus: Es ist noch kein Web3Forms Access Key eingetragen – Ihre Angaben wurden nicht versendet.');
+      }
+      var meta = { access_key: SEND.web3formsKey, subject: subject, from_name: 'Reich Haustechnik – Bestandsaufnahme', replyto: email };
+      var req;
+      if (ATTACHMENTS && hasFiles) {
+        var fd = new FormData(form);
+        if (!fd.get('botcheck')) fd.delete('botcheck');
+        Object.keys(meta).forEach(function (k) { fd.append(k, meta[k]); });
+        req = postJSON('https://api.web3forms.com/submit', fd, true);
+      } else {
+        var payload = textPayload();
+        Object.keys(meta).forEach(function (k) { payload[k] = meta[k]; });
+        req = postJSON('https://api.web3forms.com/submit', JSON.stringify(payload), false);
+      }
+      req.then(function (j) {
+        if (j && (j.success === true || String(j.success) === 'true')) successView('Ihre Bestandsaufnahme wurde erfolgreich übermittelt.');
+        else sendFailed();
+      }).catch(function () { sendFailed(); });
+      return;
+    }
+
+    if (SEND.provider === 'formsubmit' && SEND.formsubmitTo) {
       var to = encodeURIComponent(SEND.formsubmitTo);
       prepareHidden('_subject', subject);
       prepareHidden('_template', 'table');
@@ -808,21 +902,6 @@
       form.enctype = 'multipart/form-data';
       form.setAttribute('accept-charset', 'UTF-8');
       HTMLFormElement.prototype.submit.call(form);
-      return;
-    }
-    if (SEND.provider === 'web3forms' && SEND.web3formsKey) {
-      var payload = textPayload();
-      payload.access_key = SEND.web3formsKey;
-      payload.subject = subject;
-      payload.from_name = 'Reich Haustechnik – Bestandsaufnahme';
-      payload.replyto = email;
-      fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
-        .then(function (r) { return r.json(); })
-        .then(function (j) {
-          if (j && j.success) successView('Ihre Bestandsaufnahme wurde erfolgreich übermittelt.');
-          else sendFailed();
-        })
-        .catch(function () { sendFailed(); });
       return;
     }
     successView('Demo-Modus: Ihre Angaben wurden nicht versendet.');
