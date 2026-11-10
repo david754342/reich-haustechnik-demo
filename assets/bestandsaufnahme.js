@@ -569,11 +569,12 @@
   }
 
   /* ------------------------- Navigation ----------------------------- */
-  // Der Reich-Header blendet sich beim Hochscrollen wieder ein – deshalb immer seine Höhe freihalten.
+  // Nur wenn der Header fixiert ist, muss seine Höhe beim Scrollen freigehalten werden.
   function headerOffset() {
-    var h = document.querySelector('.elementor-location-header');
-    var fixed = h && h.firstElementChild;
-    return (fixed ? fixed.offsetHeight : 0) + 12;
+    var bar = document.querySelector('.elementor-location-header .elementor-sticky--active') ||
+      (document.querySelector('.elementor-location-header') || {}).firstElementChild;
+    var fixed = bar && getComputedStyle(bar).position === 'fixed';
+    return (fixed ? bar.offsetHeight : 0) + 16;
   }
   function scrollToEl(el) {
     var top = el.getBoundingClientRect().top + window.pageYOffset - headerOffset() - 8;

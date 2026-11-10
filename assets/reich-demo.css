@@ -1,77 +1,138 @@
-/* Reich Haustechnik – Demo-Ergänzungen: neue Kontaktleiste
-   Design übernommen von der senkrechten Leiste der Startseite (Desktop). */
+/* Reich Haustechnik – Demo-Ergänzungen
+   1) Button „Jetzt anfragen“ gefüllt in Reich-Blau (Logo-Farbe #003E93)
+   2) Menüleiste bleibt oben auf der Seite und scrollt mit dem Inhalt weg
+   3) Kontaktleiste rechts mittig am Rand, fährt beim Scrollen mit */
 
+/* 1) Button „Jetzt anfragen“ */
+body .elementor-46 .elementor-element.elementor-element-939d826 .elementor-button {
+  background-color: var(--e-global-color-fa5b68c, #003E93);
+  border-color: var(--e-global-color-fa5b68c, #003E93);
+  color: var(--e-global-color-primary, #F8FBFF);
+  fill: var(--e-global-color-primary, #F8FBFF);
+  transition: background-color .3s, border-color .3s, color .3s;
+}
+body .elementor-46 .elementor-element.elementor-element-939d826 .elementor-button:hover,
+body .elementor-46 .elementor-element.elementor-element-939d826 .elementor-button:focus {
+  background-color: var(--e-global-color-791b16e, #20305E);
+  border-color: var(--e-global-color-791b16e, #20305E);
+  color: #FFFFFF;
+}
+
+/* 2) Menüleiste: nicht mehr fixiert – sie steht oben und scrollt normal weg */
+.elementor-location-header .elementor-sticky--active {
+  position: absolute !important;
+  top: 0 !important;
+}
+
+/* Aufgeklapptes Handy-Menü: gleiche Farbe wie im Original, aber fast deckend,
+   damit es über Text (z. B. dem Formular) lesbar bleibt */
+.elementor-location-header .elementor-element-766459f .elementor-nav-menu--dropdown {
+  background-color: rgba(248, 251, 255, .97) !important;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 22px 34px -22px rgba(16, 28, 43, .5);
+}
+
+/* 3) Kontaktleiste */
 .rb-old-contactbar { display: none !important; }
 
 .rb-contactbar {
-  --rb-bar-bg: var(--e-global-color-text, #101C2B);
-  --rb-bar-line: var(--e-global-color-secondary, #A8B7CA);
+  --rb-bar-bg: var(--e-global-color-fa5b68c, #003E93);
+  --rb-bar-ink: #FFFFFF;
   position: fixed;
   z-index: 999;
-  right: 40px;
-  bottom: -20px;
-  width: 86px;
-  height: 400px;
-  box-sizing: border-box;
+  top: 50%;
+  right: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 10px;
+  gap: 2px;
+  padding: 10px 8px;
   background: var(--rb-bar-bg);
-  border: 2px solid var(--rb-bar-line);
-  border-radius: 25px 25px 0 0;
-  animation: rb-slide-in-up .9s ease 1s both;
+  border-radius: 18px 0 0 18px;
+  box-shadow: -8px 12px 32px -14px rgba(16, 28, 43, .55);
+  transform: translateY(-50%);
+  animation: rb-slide-in-right .7s cubic-bezier(.2, .7, .2, 1) .6s both;
 }
 
 .rb-contactbar .rb-contactbar__btn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: var(--rb-bar-line);
-  transition: transform .3s ease-out, color .3s ease-out;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  color: var(--rb-bar-ink);
+  text-decoration: none;
+  transition: background-color .25s ease, transform .25s ease;
 }
-.rb-contactbar .rb-contactbar__btn svg { width: 40px; height: 40px; fill: currentColor; display: block; }
+.rb-contactbar .rb-contactbar__btn + .rb-contactbar__btn::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: rgba(255, 255, 255, .2);
+}
+.rb-contactbar .rb-contactbar__btn svg { width: 25px; height: 25px; fill: currentColor; display: block; }
 .rb-contactbar .rb-contactbar__btn:hover,
-.rb-contactbar .rb-contactbar__btn:focus-visible { transform: translateY(-8px); color: var(--e-global-color-primary, #F8FBFF); }
-.rb-contactbar .rb-contactbar__btn:focus-visible { outline: 2px solid var(--rb-bar-line); outline-offset: 6px; border-radius: 6px; }
+.rb-contactbar .rb-contactbar__btn:focus-visible { background-color: rgba(255, 255, 255, .16); color: var(--rb-bar-ink); }
+.rb-contactbar .rb-contactbar__btn:focus-visible { outline: 2px solid #FFFFFF; outline-offset: -4px; }
 
-@keyframes rb-slide-in-up {
-  from { transform: translate3d(0, 100%, 0); visibility: visible; }
-  to   { transform: translate3d(0, 0, 0); }
+/* Beschriftung beim Überfahren mit der Maus (nur Geräte mit Maus) */
+.rb-contactbar .rb-contactbar__btn::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 16px);
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--e-global-color-text, #101C2B);
+  color: #FFFFFF;
+  font-family: "Sora local", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(8px, -50%);
+  transition: opacity .2s ease, transform .2s ease;
+}
+@media (hover: hover) {
+  .rb-contactbar .rb-contactbar__btn:hover::after,
+  .rb-contactbar .rb-contactbar__btn:focus-visible::after { opacity: 1; transform: translate(0, -50%); }
+}
+@media (hover: none) {
+  .rb-contactbar .rb-contactbar__btn::after { display: none; }
 }
 
-/* Tablet & Handy: unten quer, wie auf der Original-Seite – im neuen Stil */
-@media (max-width: 1024px) {
-  .rb-contactbar {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    height: auto;
-    flex-direction: row;
-    justify-content: space-evenly;
-    gap: 0;
-    padding: 13px 0 calc(13px + env(safe-area-inset-bottom, 0px));
-    border-bottom: 0;
-    animation-delay: .3s;
-  }
-  .rb-contactbar .rb-contactbar__btn { width: 48px; height: 36px; }
-  .rb-contactbar .rb-contactbar__btn svg { width: 26px; height: 26px; }
-  .rb-contactbar .rb-contactbar__btn:hover,
-  .rb-contactbar .rb-contactbar__btn:focus-visible { transform: translateY(-4px); }
+@keyframes rb-slide-in-right {
+  from { transform: translate(100%, -50%); }
+  to   { transform: translate(0, -50%); }
+}
 
-  /* Slider/Bewertungs-Widget ragen am Handy seitlich heraus – sonst wird die Seite breiter
-     als der Bildschirm und die unten fixierte Leiste rutscht aus dem sichtbaren Bereich. */
+/* Tablet */
+@media (max-width: 1024px) {
+  /* Slider/Bewertungs-Widget ragen auf kleinen Bildschirmen seitlich heraus – sonst wird
+     die Seite breiter als der Bildschirm und fixierte Elemente sitzen falsch. */
   html, body { overflow-x: clip; }
-  body:has(.rb-contactbar) { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
-  body:has(.rb-contactbar) .cmplz-manage-consent { bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important; }
+  .rb-contactbar { padding: 8px 6px; border-radius: 16px 0 0 16px; }
+  .rb-contactbar .rb-contactbar__btn { width: 48px; height: 48px; }
+  .rb-contactbar .rb-contactbar__btn svg { width: 23px; height: 23px; }
+}
+
+/* Handy: schmaler, damit wenig Inhalt verdeckt wird */
+@media (max-width: 767px) {
+  .rb-contactbar { padding: 5px 3px; gap: 0; border-radius: 14px 0 0 14px; }
+  .rb-contactbar .rb-contactbar__btn { width: 42px; height: 44px; border-radius: 10px; }
+  .rb-contactbar .rb-contactbar__btn + .rb-contactbar__btn::before { left: 10px; right: 10px; top: 0; }
+  .rb-contactbar .rb-contactbar__btn svg { width: 20px; height: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rb-contactbar { animation: none; }
-  .rb-contactbar .rb-contactbar__btn { transition: none; }
+  .rb-contactbar .rb-contactbar__btn, .rb-contactbar .rb-contactbar__btn::after { transition: none; }
 }
